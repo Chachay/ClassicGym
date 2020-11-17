@@ -39,12 +39,18 @@ Reward is scaled to `[0, 1]`. When obs is `[0., -pi, 0., 0.]`, reward is `1`.
 
 ```
 Q = diag([0.01, 1., 0.01, 0.1])
-x_ref = [0., -np.pi, 0., 0.]
+x_ref = [0., -pi, 0., 0.]
 
 J = (obs - x_ref).T @ Q @ (obs - x_ref)
 out_of_range = is_crashed(obs) # return 1 if obs is out of range
 
 reward = exp(-(J + 100*out_of_range))
+```
+
+NOTE: Reward is equivalent as follow at [\[1907\.02057\] Benchmarking Model\-Based Reinforcement Learning](https://arxiv.org/abs/1907.02057)
+
+```
+reward = - (x[1]-pi)**2
 ```
 
 ### Starting State
@@ -58,3 +64,4 @@ Num | Observation | Min | Max
 ### Episode Termination
 1. Observation states is out of range
 2. Episode length is greater than 1200 (60sec in 20Hz)
+
