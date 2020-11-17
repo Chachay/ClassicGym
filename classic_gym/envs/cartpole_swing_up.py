@@ -123,7 +123,17 @@ class CartPoleSwingUp(gym.Env):
         return self.x
 
     def render(self, mode='human', close=False):
-        pass
+        import matplotlib.pyplot as plt
+        plt.cla()
+        # Cart (Dot)
+        plt.plot(self.x[0],  0, "ro")
+        # Pendulum
+        x = [self.x[0], self.x[0]+np.sin(self.x[1])*self.l]
+        y = [0, -np.cos(self.x[1])*self.l]
+        plt.plot(x, y, "k-")
+        plt.xlim(-3,3)
+        plt.ylim(-3,3)
+        plt.pause(0.1)
 
     def _reward(self, obs):
         obs_clipped = np.clip(obs, self.observation_space.low, self.observation_space.high)
