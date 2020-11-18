@@ -1,6 +1,11 @@
 # ClassicGym
 OpenAI Gym environments for classic (nonlinear) problems
 
+## Install
+```
+pip install -e .
+```
+
 ## Usage
 
 ```
