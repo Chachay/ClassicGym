@@ -18,6 +18,7 @@ env = gym.make("cartpole-swingup-v0")
 ## Envs
 The environments in this package
 - cartpole-swingup-v0
+- evaporator-v0
 
 ### CartPole Swing up
 ![CartPole](assets/cartpole.png)
