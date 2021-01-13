@@ -101,6 +101,7 @@ Num | Action | Min | Max
 
 ### Mobile Robot
 Roomba like mobile robot
+
 ![MobileRobot](assets/mobile_robot.png)
 
 #### Observation
