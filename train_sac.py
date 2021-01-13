@@ -287,27 +287,17 @@ def main():
             )
         )
     elif args.num_envs==1:
-        def print_evaluation(env, agent, evaluator, step, eval_score):
-            print("print eval", eval_score, step, evaluator.env_get_stats())
-
-        try:
-            experiments.train_agent_with_evaluation(
-                agent=agent,
-                env=make_env(0, False),
-                eval_env=make_env(0, True),
-                outdir=args.outdir,
-                steps=args.steps,
-                eval_n_steps=None,
-                eval_n_episodes=args.eval_n_runs,
-                eval_interval=args.eval_interval,
-                save_best_so_far_agent=True,
-                evaluation_hooks=(print_evaluation,),
-            )
-        except:
-            import glob
-            import os
-            print("Stopped---")
-            print(glob.glob(os.path.join(args.outdir,'*_except')))
+        experiments.train_agent_with_evaluation(
+            agent=agent,
+            env=make_env(0, False),
+            eval_env=make_env(0, True),
+            outdir=args.outdir,
+            steps=args.steps,
+            eval_n_steps=None,
+            eval_n_episodes=args.eval_n_runs,
+            eval_interval=args.eval_interval,
+            save_best_so_far_agent=True,
+        )
 
     else:
         experiments.train_agent_batch_with_evaluation(

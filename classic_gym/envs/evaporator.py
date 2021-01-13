@@ -18,9 +18,9 @@ class Evaporator(gym.Env):
         
         self.A, self.B = self.gen_lmodel()
         
-        q = sy.symbols('q:{0}'.format(4))
-        u = sy.symbols('u')
-        self.calc_rhe = sy.lambdify([q,u], self.gen_rhe_sympy())
+        q = sy.symbols('q:{0}'.format(2))
+        u = sy.symbols('u:{0}'.format(2))
+        self.calc_rhe = sy.lambdify([q,u], np.squeeze(self.gen_rhe_sympy()), "numpy")
 
         # Controller Weight
         self.action_space = spaces.Box(low=100, high=400, shape=(2,))
@@ -48,7 +48,7 @@ class Evaporator(gym.Env):
     def gen_lmodel(self):
         mat = self.gen_rhe_sympy()
         q = sy.symbols('q:{0}'.format(2))
-        u = sy.symbols('u:{0}'.foramt(2))
+        u = sy.symbols('u:{0}'.format(2))
         
         A = mat.jacobian(q)
         B = mat.jacobian(u)
@@ -57,12 +57,12 @@ class Evaporator(gym.Env):
                 sy.lambdify([q,u], np.squeeze(B), "numpy"))
                 
     def gen_dmodel(self, x, u, dT):
-        f = self.calc_rhe(x, u[0]).ravel()
-        A_c = np.array(self.A(x, u[0]))
-        B_c = np.array(self.B(x, u[0]))
+        f = self.calc_rhe(x, u)
+        A_c = np.array(self.A(x, u))
+        B_c = np.array(self.B(x, u))
         
-        g_c = f - A_c@x - B_c*u
-        B = np.vstack((B_c, g_c)).T
+        g_c = np.atleast_2d(f - A_c@x - B_c@u).T
+        B = np.hstack((B_c, g_c))
 
         A_d, B_d, _, _, _ = cont2discrete((A_c, B, 0, 0), dT)
         g_d = B_d[:,2]
@@ -88,7 +88,7 @@ class Evaporator(gym.Env):
         
         for _ in range(self.obs):
             A, B, g = self.gen_dmodel(self.x, u, dT)
-            self.x = A@self.x + B * u +g
+            self.x = A@self.x + B @ u +g
 
         self.time += 1
 
@@ -108,8 +108,8 @@ class Evaporator(gym.Env):
     def _reward(self, obs, act):
         obs_clipped = np.clip(obs, self.observation_space.low, self.observation_space.high)
         crashed = not np.array_equiv(obs_clipped, obs)
-        J = −86.8669663209708 * obs[1] + 23.8176373535448 * act[0] + 0.6 * act[1] + 1621.96634461555
-        return - (J - crashed*np.inf)
+        J=23.8176373535448*act[0]+0.6*act[1]+1621.96634461555-86.86696632099708*obs[1]
+        return - (J + crashed*np.inf)
 
     def _is_terminal(self, obs):
         time = self.time > self.spec.max_episode_steps

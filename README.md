@@ -19,6 +19,7 @@ env = gym.make("cartpole-swingup-v0")
 The environments in this package
 - cartpole-swingup-v0
 - evaporator-v0
+- mobile-v0
 
 ### CartPole Swing up
 ![CartPole](assets/cartpole.png)
@@ -97,3 +98,30 @@ Num | Action | Min | Max
 #### Episode Termination
 1. Observation states is out of range
 2. Episode length is greater than 3600 (60min in 1Hz)
+
+### Mobile Robot
+Roomba like mobile robot
+![MobileRobot](assets/mobile_robot.png)
+
+#### Observation
+Type: Box(6)
+
+Num | Observation | Min | Max
+---|---|---|---
+0 | Robot X Position [m] | -2 | 2 
+1 | Robot Y Position [m] | -2 | 2 
+2 | Robot Angle [rad] | - 6  | 6
+3 | Robot X Target Position [m] | -2 | 2 
+4 | Robot Y Target Position [m] | -2 | 2 
+5 | Robot Target Angle [rad] | - 6  | 6
+
+#### Actions
+Type: Box(2)
+
+Num | Action | Min | Max
+--- | --- | --- | ---
+0 | Right Wheel Speed [m/s] | -0.5 |  0.5
+1 | Left Wheel Speed [m/s] | -0.5 |  0.5
+
+#### Reward
+Reward is $ \Vert q - q_target \Vert_2^2 + 0.1 * \Vert u \Vert_2^2 $, where q is robot state and u is action.
