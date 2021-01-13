@@ -105,16 +105,13 @@ Roomba like mobile robot
 ![MobileRobot](assets/mobile_robot.png)
 
 #### Observation
-Type: Box(6)
+Type: Box(3)
 
 Num | Observation | Min | Max
 ---|---|---|---
 0 | Robot X Position [m] | -2 | 2 
 1 | Robot Y Position [m] | -2 | 2 
 2 | Robot Angle [rad] | - 6  | 6
-3 | Robot X Target Position [m] | -2 | 2 
-4 | Robot Y Target Position [m] | -2 | 2 
-5 | Robot Target Angle [rad] | - 6  | 6
 
 #### Actions
 Type: Box(2)
@@ -125,4 +122,4 @@ Num | Action | Min | Max
 1 | Left Wheel Speed [m/s] | -0.5 |  0.5
 
 #### Reward
-Reward is $ \Vert q - q_target \Vert_2^2 + 0.1 * \Vert u \Vert_2^2 $, where q is robot state and u is action.
+Reward is $ \Vert q - q_target \Vert_2^2 + 0.1 * \Vert u \Vert_2^2 $, where q is robot state and u is action. The target is [0m, 0m, 0rad].

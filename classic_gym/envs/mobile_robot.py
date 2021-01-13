@@ -14,7 +14,7 @@ class MobileRobot(gym.Env):
         self.NX = 3
         self.NU = 2
 
-        self.x = np.zeros(self.NX*2)
+        self.x = np.zeros(self.NX)
         
         self.dT = dT
         self.obs = obs
@@ -28,8 +28,8 @@ class MobileRobot(gym.Env):
         # Controller Weight
         self.action_space = spaces.Box(low=-0.5, high=0.5, shape=(2,))
         self.observation_space = spaces.Box(
-            low=np.array([-2, -2, -6, -2, -2, -6]),
-            high=np.array([2,  2,  6,  2,  2,  6]),
+            low=np.array([-2, -2, -6]),
+            high=np.array([2,  2,  6]),
             dtype=np.float32
         )
 
@@ -80,17 +80,12 @@ class MobileRobot(gym.Env):
         np.random.seed(seed=seed)
 
     def reset(self):
-        self.x = np.zeros(self.NX*2)
+        self.x = np.zeros(self.NX)
 
         # machine state
         self.x[0] = np.random.uniform(-2, 2)
         self.x[1] = np.random.uniform(-2, 2)
         self.x[2] = np.random.uniform(-np.pi, np.pi)
-
-        # target 
-        self.x[3] = np.random.uniform(-2, 2)
-        self.x[4] = np.random.uniform(-2, 2)
-        self.x[5] = np.random.uniform(-np.pi, np.pi)
 
         self.time = 0
 
@@ -98,11 +93,12 @@ class MobileRobot(gym.Env):
 
     def step(self, u):
         u = np.clip(u, -0.5, 0.5)
+
         dT = self.dT / self.obs
         
         for _ in range(self.obs):
-            A, B, g = self.gen_dmodel(self.x[:self.NX], u, dT)
-            self.x[:self.NX] = A@self.x[:self.NX] + B @ u +g
+            A, B, g = self.gen_dmodel(self.x, u, dT)
+            self.x = A@self.x + B @ u +g
 
         self.time += 1
 
@@ -127,11 +123,11 @@ class MobileRobot(gym.Env):
         circle = plt.Circle((self.x[0],self.x[1]), 0.1, color='r', fill=True)
         ax.add_artist(circle)
         plt.arrow(self.x[0], self.x[1], 
-                  l*np.sin(self.x[2]), l*np.cos(self.x[2]), 
+                  l*np.cos(self.x[2]), l*np.sin(self.x[2]), 
                   head_width=0.05, head_length=0.1, fc='k', ec='k', zorder=10)
         # Target Arrow
-        plt.arrow(self.x[3], self.x[4], 
-                  l*np.sin(self.x[5]), l*np.cos(self.x[5]), 
+        plt.arrow(0, 0, 
+                  l*np.cos(0.), l*np.sin(0.), 
                   head_width=0.05, head_length=0.1, fc='b', ec='b')
         plt.axis('equal')
         plt.xlim(-2.1, 2.1)
@@ -141,9 +137,9 @@ class MobileRobot(gym.Env):
     def _reward(self, obs, act):
         obs_clipped = np.clip(obs, self.observation_space.low, self.observation_space.high)
         crashed = not np.array_equiv(obs_clipped, obs)
-        J_state = np.sum((self.x[:self.NX] - self.x[self.NX:])**2)
+        J_state = np.sum(self.x**2)
         J_action = np.sum(act**2) * 0.1
-        return - (J_state + J_action + crashed*np.inf)
+        return - (J_state + J_action)
 
     def _is_terminal(self, obs):
         time = self.time > self.spec.max_episode_steps

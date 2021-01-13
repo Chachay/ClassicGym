@@ -109,7 +109,7 @@ class Evaporator(gym.Env):
         obs_clipped = np.clip(obs, self.observation_space.low, self.observation_space.high)
         crashed = not np.array_equiv(obs_clipped, obs)
         J=23.8176373535448*act[0]+0.6*act[1]+1621.96634461555-86.86696632099708*obs[1]
-        return - (J + crashed*np.inf)
+        return -J
 
     def _is_terminal(self, obs):
         time = self.time > self.spec.max_episode_steps
