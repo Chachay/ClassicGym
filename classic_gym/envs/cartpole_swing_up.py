@@ -73,8 +73,8 @@ class CartPoleSwingUp(gym.Env):
         # Define OpenAI gym properties
         self.action_space = spaces.Box(low=-3, high=3, shape=(1,))
         self.observation_space = spaces.Box(
-            low=np.array([-10, -2*np.pi, -10, -10]),
-            high=np.array([10,  2*np.pi,  10,  10]),
+            low=np.array([-3, -2*np.pi, -10, -10]),
+            high=np.array([ 3,  2*np.pi,  10,  10]),
             dtype=np.float32
         )
 
