@@ -52,6 +52,7 @@ class quadraticCostModel(CostModel):
         assert r.ndim==1 and r.shape[0]==NU
         assert Q_term.ndim==2 and Q_term.shape[0]==NX and Q_term.shape[1]==NX
         assert q_term.ndim==1 and q_term.shape[0]==NX
+        assert x_ref.ndim==1 and x_ref.shape[0]==NX
 
         self.NX = NX
         self.NU = NU

@@ -9,7 +9,7 @@ register(
 register(
     id='evaporator-v0',
     entry_point='classic_gym.envs:Evaporator',
-    max_episode_steps=1200
+    max_episode_steps=3600
 )
 
 register(
