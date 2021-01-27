@@ -10,27 +10,34 @@ class EnvModel(object):
         self.NX = NX
         self.NU = NU
 
-        self.A, self.B, self.f = self.gen_lmodel()
+        self.Hqq, self.Huu, self.Huq, self.Jq, self.Ju, self.f = self.get_lambdified()
 
     def gen_rhe_sympy(self):
         raise NotImplementedError
     
-    def gen_lmodel(self):
+    def get_lambdified(self):
         f = self.gen_rhe_sympy()
         q = sy.symbols('q:{0}'.format(self.NX))
         u = sy.symbols('u:{0}'.format(self.NU))
         
-        A = f.jacobian(q)
-        B = f.jacobian(u)
+        Jq = f.jacobian(q)
+        Ju = f.jacobian(u)
+
+        Hqq = sy.derive_by_array(Jq, q)
+        Huu = sy.derive_by_array(Ju, u)
+        Huq = sy.derive_by_array(Ju, q)
         
-        return (sy.lambdify([q,u], A, ["numpy"]),
-                sy.lambdify([q,u], B, ["numpy"]),
+        return (sy.lambdify([q,u], Hqq, ["numpy"]),
+                sy.lambdify([q,u], Huu, ["numpy"]),
+                sy.lambdify([q,u], Huq, ["numpy"]),
+                sy.lambdify([q,u], Jq, ["numpy"]),
+                sy.lambdify([q,u], Ju, ["numpy"]),
                 sy.lambdify([q,u], f, ["numpy"]))
                 
     def gen_dmodel(self, x, u, dT):
         f = self.f(x, u)
-        A_c = self.A(x, u)
-        B_c = self.B(x, u)
+        A_c = self.Ju(x, u)
+        B_c = self.Jq(x, u)
         
         x = x.reshape((-1,1))
         u = u.reshape((-1,1))

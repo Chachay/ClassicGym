@@ -10,6 +10,7 @@ import gym
 from gym import spaces
 
 from classic_gym.model import EnvModel
+from classic_gym.cost import quadraticCostModel 
 
 class CartModel(EnvModel):
     def __init__(self, l = .8, M =1., m=.1, **kwargs):
@@ -60,8 +61,14 @@ class CartPoleSwingUp(gym.Env):
                     )
         
         # Controller Weight
-        self.Q = np.diag([1.,100, 1., 10.]) / 100.
-        self.x_ref = np.array([0., -np.pi, 0., 0.])
+        Q = np.diag([1.,100, 1., 10.]) / 100.
+        self.cost = quadraticCostModel(
+            Q=Q, R=np.zeros((self.NU, self.NU)), 
+            q=np.zeros(self.NX), r=np.zeros(self.NU),
+            Q_term=Q, q_term=np.zeros(self.NX),
+            x_ref = np.array([0., -np.pi, 0., 0.]),
+            NX=self.NX, NU=self.NU
+        )
 
         # Define OpenAI gym properties
         self.action_space = spaces.Box(low=-3, high=3, shape=(1,))
@@ -95,7 +102,7 @@ class CartPoleSwingUp(gym.Env):
         obs = self.observe(None)
         info = {}
         terminal = self._is_terminal(obs)
-        reward = self._reward(obs)
+        reward = self._reward(obs, u)
 
         return obs, reward, terminal, info
 
@@ -115,10 +122,10 @@ class CartPoleSwingUp(gym.Env):
         plt.ylim(-3,3)
         plt.pause(0.1)
 
-    def _reward(self, obs):
+    def _reward(self, obs, act):
         obs_clipped = np.clip(obs, self.observation_space.low, self.observation_space.high)
         crashed = not np.array_equiv(obs_clipped, obs)
-        J = (obs-self.x_ref).T@self.Q@(obs-self.x_ref)
+        J = self.cost.L(obs, act).ravel()[0]
         return np.exp(-( J + 100. * crashed))
 
     def _is_terminal(self, obs):

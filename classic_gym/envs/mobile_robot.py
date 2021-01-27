@@ -10,6 +10,7 @@ import gym
 from gym import spaces
 
 from classic_gym.model import EnvModel
+from classic_gym.cost import quadraticCostModel 
 
 class RobotModel(EnvModel):
     def gen_rhe_sympy(self):
@@ -39,6 +40,16 @@ class MobileRobot(gym.Env):
         self.obs = obs
         
         self.model = RobotModel(self.NX, self.NU)
+
+        # Controller Weight
+        Q = np.diag([1., 1., 1.])
+        R = np.diag([0.1, 0.1])
+        self.cost = quadraticCostModel(
+            Q=Q, R=R,
+            q=np.zeros(self.NX), r=np.zeros(self.NU),
+            Q_term=Q, q_term=np.zeros(self.NX),
+            NX=self.NX, NU=self.NU
+        )
         
         # Controller Weight
         self.action_space = spaces.Box(low=-0.5, high=0.5, shape=(2,))
@@ -106,9 +117,10 @@ class MobileRobot(gym.Env):
     def _reward(self, obs, act):
         obs_clipped = np.clip(obs, self.observation_space.low, self.observation_space.high)
         crashed = not np.array_equiv(obs_clipped, obs)
-        J_state = np.sum(self.x**2)
-        J_action = np.sum(act**2) * 0.1
-        return - (J_state + J_action)
+        #J_state = np.sum(self.x**2)
+        #J_action = np.sum(act**2) * 0.1
+        J = self.cost.L(obs, act).ravel()[0]
+        return - (J)
 
     def _is_terminal(self, obs):
         time = self.time > self.spec.max_episode_steps
