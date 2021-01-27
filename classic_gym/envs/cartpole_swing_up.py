@@ -9,11 +9,43 @@ from scipy.signal import cont2discrete
 import gym
 from gym import spaces
 
+from classic_gym.model import EnvModel
+
+class CartModel(EnvModel):
+    def __init__(self, l = .8, M =1., m=.1, **kwargs):
+        self.l = l
+        self.M = M
+        self.m = m
+        super().__init__(**kwargs)
+
+    def gen_rhe_sympy(self):
+        g = 9.8
+        l = self.l
+        M = self.M
+        m = self.m
+
+        q  = sy.symbols('q:{0}'.format(4))
+        qd = q[2:4]
+        u  = sy.symbols('u:{0}'.format(1))
+        
+        I = sy.Matrix([[1, 0, 0, 0], 
+                      [0, 1, 0, 0], 
+                      [0, 0, M + m, l*m*sy.cos(q[1])], 
+                      [0, 0, l*m*sy.cos(q[1]), l**2*m]])
+        f = sy.Matrix([
+                       qd[0], 
+                       qd[1],
+                       l*m*sy.sin(q[1])*qd[1]**2 + u[0],
+                      -g*l*m*sy.sin(q[1])])
+        return sy.simplify(I.inv()*f)
+
 class CartPoleSwingUp(gym.Env):
     def __init__(self, l = .8, M =1., m=.1, dT=0.05, obs = 5):
-        
+        self.NX = 4
+        self.NU = 1
+
         # x = [x, theta, x_dot, theta_dot]
-        self.x = np.zeros(4)
+        self.x = np.zeros(self.NX)
         
         self.l = l
         self.M = M
@@ -22,12 +54,11 @@ class CartPoleSwingUp(gym.Env):
         self.dT = dT
         self.obs = obs
         
-        self.A, self.B = self.gen_lmodel()
+        self.model = CartModel(
+                        NX=self.NX, NU=self.NU, 
+                        l=l, M=M, m=m
+                    )
         
-        q = sy.symbols('q:{0}'.format(4))
-        u = sy.symbols('u')
-        self.calc_rhe = sy.lambdify([q,u], self.gen_rhe_sympy())
-
         # Controller Weight
         self.Q = np.diag([1.,100, 1., 10.]) / 100.
         self.x_ref = np.array([0., -np.pi, 0., 0.])
@@ -42,53 +73,6 @@ class CartPoleSwingUp(gym.Env):
 
         self.reset()
     
-    def gen_rhe_sympy(self):
-        g = 9.8
-        l = self.l
-        M = self.M
-        m = self.m
-
-        q  = sy.symbols('q:{0}'.format(4))
-        qd = q[2:4]
-        u  = sy.symbols('u')
-        
-        I = sy.Matrix([[1, 0, 0, 0], 
-                      [0, 1, 0, 0], 
-                      [0, 0, M + m, l*m*sy.cos(q[1])], 
-                      [0, 0, l*m*sy.cos(q[1]), l**2*m]])
-        f = sy.Matrix([
-                       qd[0], 
-                       qd[1],
-                       l*m*sy.sin(q[1])*qd[1]**2 + u,
-                      -g*l*m*sy.sin(q[1])])
-        return sy.simplify(I.inv()*f)
-    
-    def gen_lmodel(self):
-        mat = self.gen_rhe_sympy()
-        q = sy.symbols('q:{0}'.format(4))
-        u = sy.symbols('u')
-        
-        A = mat.jacobian(q)
-        #B = mat.jacobian(u)
-        B = mat.diff(u)
-        
-        return (sy.lambdify([q,u], np.squeeze(A), "numpy"),
-                sy.lambdify([q,u], np.squeeze(B), "numpy"))
-                
-    def gen_dmodel(self, x, u, dT):
-        f = self.calc_rhe(x, u[0]).ravel()
-        A_c = np.array(self.A(x, u[0]))
-        B_c = np.array(self.B(x, u[0]))
-        
-        g_c = f - A_c@x - B_c*u
-        B = np.vstack((B_c, g_c)).T
-
-        A_d, B_d, _, _, _ = cont2discrete((A_c, B, 0, 0), dT)
-        g_d = B_d[:,1]
-        B_d = B_d[:,0]
-
-        return A_d, B_d, g_d
-
     def seed(self, seed=None):
         np.random.seed(seed=seed)
 
@@ -104,12 +88,8 @@ class CartPoleSwingUp(gym.Env):
 
     def step(self, u):
         u = np.clip(u, -3, 3)
-        dT = self.dT / self.obs
-        
-        for _ in range(self.obs):
-            A, B, g = self.gen_dmodel(self.x, u, dT)
-            self.x = A@self.x + B * u +g
 
+        self.x = self.model.step_sim(self.x, u, self.dT, self.obs)
         self.time += 1
 
         obs = self.observe(None)

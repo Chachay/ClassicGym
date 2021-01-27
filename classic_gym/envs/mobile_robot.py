@@ -9,6 +9,25 @@ from scipy.signal import cont2discrete
 import gym
 from gym import spaces
 
+from classic_gym.model import EnvModel
+
+class RobotModel(EnvModel):
+    def gen_rhe_sympy(self):
+        Wheel_Distance = 0.235 #[m]
+
+        q  = sy.symbols('q:{0}'.format(self.NX))
+        u  = sy.symbols('u:{0}'.format(self.NU))
+
+        v = (u[0] + u[1])/2
+        omega = (u[0] - u[1])/Wheel_Distance
+
+        f = sy.Matrix([
+                v*sy.sin(q[2]), 
+                v*sy.cos(q[2]),
+                omega
+            ])
+        return f 
+
 class MobileRobot(gym.Env):
     def __init__(self, dT=0.05, obs = 10):
         self.NX = 3
@@ -19,12 +38,8 @@ class MobileRobot(gym.Env):
         self.dT = dT
         self.obs = obs
         
-        self.A, self.B = self.gen_lmodel()
+        self.model = RobotModel(self.NX, self.NU)
         
-        q = sy.symbols('q:{0}'.format(self.NX))
-        u = sy.symbols('u:{0}'.format(self.NU))
-        self.calc_rhe = sy.lambdify([q,u], self.gen_rhe_sympy(), "numpy")
-
         # Controller Weight
         self.action_space = spaces.Box(low=-0.5, high=0.5, shape=(2,))
         self.observation_space = spaces.Box(
@@ -35,47 +50,6 @@ class MobileRobot(gym.Env):
 
         self.reset()
     
-    def gen_rhe_sympy(self):
-        Wheel_Distance = 0.235 #[m]
-
-        q  = sy.symbols('q:{0}'.format(self.NX))
-        u  = sy.symbols('u:{0}'.format(self.NU))
-
-        v = (u[0] + u[1])/2
-        omega = (u[0] - u[1])/Wheel_Distance
-
-        MAT = sy.Matrix([
-                v*sy.sin(q[2]), 
-                v*sy.cos(q[2]),
-                omega
-            ])
-        return MAT
-    
-    def gen_lmodel(self):
-        mat = self.gen_rhe_sympy()
-        q = sy.symbols('q:{0}'.format(self.NX))
-        u = sy.symbols('u:{0}'.format(self.NU))
-        
-        A = mat.jacobian(q)
-        B = mat.jacobian(u)
-        
-        return (sy.lambdify([q,u], np.squeeze(A), "numpy"),
-                sy.lambdify([q,u], np.squeeze(B), "numpy"))
-                
-    def gen_dmodel(self, x, u, dT):
-        f = self.calc_rhe(x, u).ravel()
-        A_c = np.array(self.A(x, u))
-        B_c = np.array(self.B(x, u))
-        
-        g_c = np.atleast_2d(f - A_c@x - B_c@u).T
-        B = np.hstack((B_c, g_c))
-
-        A_d, B_d, _, _, _ = cont2discrete((A_c, B, 0, 0), dT)
-        g_d = B_d[:,self.NU]
-        B_d = B_d[:,:self.NU]
-
-        return A_d, B_d, g_d
-
     def seed(self, seed=None):
         np.random.seed(seed=seed)
 
@@ -94,12 +68,7 @@ class MobileRobot(gym.Env):
     def step(self, u):
         u = np.clip(u, -0.5, 0.5)
 
-        dT = self.dT / self.obs
-        
-        for _ in range(self.obs):
-            A, B, g = self.gen_dmodel(self.x, u, dT)
-            self.x = A@self.x + B @ u +g
-
+        self.x = self.model.step_sim(self.x, u, self.dT, self.obs)
         self.time += 1
 
         obs = self.observe(None)
