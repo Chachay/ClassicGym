@@ -27,9 +27,9 @@ class EnvModel(object):
         Huu = sy.derive_by_array(Ju, u)
         Huq = sy.derive_by_array(Ju, q)
         
-        return (sy.lambdify([q,u], Hqq, ["numpy"]),
-                sy.lambdify([q,u], Huu, ["numpy"]),
-                sy.lambdify([q,u], Huq, ["numpy"]),
+        return (sy.lambdify([q,u], np.squeeze(Hqq), ["numpy"]),
+                sy.lambdify([q,u], np.squeeze(Huu), ["numpy"]),
+                sy.lambdify([q,u], np.squeeze(Huq), ["numpy"]),
                 sy.lambdify([q,u], Jq, ["numpy"]),
                 sy.lambdify([q,u], Ju, ["numpy"]),
                 sy.lambdify([q,u], f, ["numpy"]))

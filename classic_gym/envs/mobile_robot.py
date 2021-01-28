@@ -23,8 +23,8 @@ class RobotModel(EnvModel):
         omega = (u[0] - u[1])/Wheel_Distance
 
         f = sy.Matrix([
-                v*sy.sin(q[2]), 
-                v*sy.cos(q[2]),
+                v*sy.cos(q[2]), 
+                v*sy.sin(q[2]),
                 omega
             ])
         return f 
@@ -42,8 +42,8 @@ class MobileRobot(gym.Env):
         self.model = RobotModel(self.NX, self.NU)
 
         # Controller Weight
-        Q = np.diag([1., 1., 1.])
-        R = np.diag([0.1, 0.1])
+        Q = np.diag([10., 10., 1.])
+        R = np.diag([10, 10])
         self.cost = quadraticCostModel(
             Q=Q, R=R,
             q=np.zeros(self.NX), r=np.zeros(self.NU),

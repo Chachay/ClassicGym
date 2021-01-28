@@ -49,7 +49,6 @@ def main():
     parser.add_argument(
         "--env",
         type=str,
-        #default="agx-cartpole-v0",
         default="cartpole-swingup-v0",
         help="Cart pole balancing environment on AgX Dynamics",
     )
